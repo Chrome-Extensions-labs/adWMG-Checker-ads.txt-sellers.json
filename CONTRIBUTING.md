@@ -32,7 +32,37 @@ The workflow here is as straightforward as possible:
 * Try to stick to the code style already used in the project.
 * Make your commit messages clear so it's easy to understand what changed.
 * If your Pull Request resolves a specific Issue, mention its number in the description (e.g., `Closes #42`).
-* If the logic changes, please update the relevant section in the README.
+* If the logic changes, please update the relevant documentation under `docs/`.
+
+## Local Extension Checks
+
+Use Node.js 20 or newer. Syntax and unit checks have no dependency installation requirement:
+
+```bash
+node scripts/check.cjs
+node --test
+```
+
+To test the loaded MV3 extension in an isolated Chromium profile:
+
+```bash
+npm ci
+npx playwright install chromium --no-shell
+npm run test:browser
+```
+
+On Linux, use `npx playwright install chromium --with-deps --no-shell` if browser system libraries are missing.
+The browser test uses local fixtures, opens popup/analyzer pages, exercises content scripts and restarts the real service worker.
+Screenshots are written to the ignored `test-results/` directory.
+
+Repository automation tests use Python 3.11 or newer and do not contact GitHub or a model:
+
+```bash
+python -m unittest discover -s tests -p '*_test.py' -v
+```
+
+For manual verification, load this folder through **Load unpacked** on the browser's extensions page,
+open a publisher website, and inspect the popup, analyzer and plain-text file viewer.
 
 ## ⬢ Feedback
 

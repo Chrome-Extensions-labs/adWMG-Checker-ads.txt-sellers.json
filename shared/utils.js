@@ -5,7 +5,7 @@ const CUSTOM_URL_KEY = "custom_sellers_url";
  * Extracts a stable brand token from a sellers registry URL.
  *
  * @param {string} url - Absolute URL to a sellers registry endpoint.
- * @returns {string} Brand-like hostname token used for text matching.
+ * @returns {string} Short provider name for interface labels; matching uses full domains.
  *
  * @example
  * const brand = getBrandName("https://pubmatic.com/sellers.json");
@@ -41,22 +41,21 @@ function getBrandName(url) {
  * const domain = cleanDomain("https://www.Example.com/path?q=1");
  * // domain === "example.com"
  */
-function cleanDomain(input) {
-  if (!input) return "";
-  let d = input.trim().toLowerCase();
+function normalizeSiteUrl(value) {
+  if (typeof value !== "string" || !value.trim() || /[\s\\]/.test(value.trim())) return null;
+  const input = value.trim();
+  if (/^[a-z][a-z0-9+.-]*:/i.test(input) && !/^https?:\/\//i.test(input) && !/^[^/:]+:\d+(?:[/?#]|$)/.test(input)) return null;
   try {
-    // Step 1: Prefer URL parsing to avoid custom parsing edge cases.
-    const withProtocol = d.includes("://") ? d : "https://" + d;
-    const hostname = new URL(withProtocol).hostname;
-    return hostname.replace(/^www\./, "").replace(/\.+/g, ".");
-  } catch {
-    // Step 2: Fallback parser keeps popup UX resilient on malformed input.
-    d = d.replace(/^https?:\/\//, "");
-    d = d.replace(/^www\./, "");
-    d = d.replace(/\.+/g, ".");
-    d = d.split(/[/?#\s,;=:@]/)[0];
-    return d;
-  }
+    const url = new URL(/^https?:\/\//i.test(input) ? input : "https://" + input);
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password ||
+        !(normalizeAdvertisingDomain(url.hostname) || url.hostname === "localhost")) return null;
+    return url.origin;
+  } catch { return null; }
+}
+
+function cleanDomain(input) {
+  const origin = normalizeSiteUrl(input);
+  return origin ? new URL(origin).hostname.replace(/^www\./, "").replace(/\.$/, "") : "";
 }
 
 /**
@@ -70,56 +69,143 @@ function cleanDomain(input) {
  * // href === "https://example.com/"
  */
 function safeHref(value) {
-  if (!value) return null;
-  let href = value.trim();
-  // Step 1: Auto-prefix protocol so plain domains become clickable links.
-  if (!href.startsWith("http://") && !href.startsWith("https://")) {
-    href = "https://" + href;
-  }
+  if (typeof value !== "string" || !value.trim()) return null;
+  const input = value.trim();
+  if (/^[a-z][a-z0-9+.-]*:/i.test(input) && !/^https?:\/\//i.test(input)) return null;
   try {
-    const url = new URL(href);
-    // Step 2: Restrict protocols to prevent javascript/data URI injection.
-    if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
-    return null;
-  } catch {
-    return null;
-  }
+    const url = new URL(/^https?:\/\//i.test(input) ? input : "https://" + input);
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch { return null; }
 }
 
-/**
- * Fetches a URL with timeout and retry semantics.
- *
- * @param {string} url - Endpoint to request.
- * @param {Object} [options={}] - Retry and fetch controls.
- * @param {number} [options.timeout=8000] - Abort timeout in milliseconds.
- * @param {number} [options.retries=1] - Number of additional retry attempts.
- * @param {Object} [options.fetchOptions={}] - Additional options passed to fetch.
- * @returns {Promise<Response>} Successful Fetch API response object.
- * @throws {Error} Propagates fetch/network/http errors after final retry.
- *
- * @example
- * const response = await fetchWithTimeoutAndRetry("https://example.com/ads.txt", {
- *   timeout: 10000,
- *   retries: 2
- * });
- * const body = await response.text();
- */
-async function fetchWithTimeoutAndRetry(url, { timeout = 8000, retries = 1, fetchOptions = {} } = {}) {
-  // Step 1: Retry loop smooths temporary upstream/network instability.
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    try {
-      const res = await fetch(url, { signal: controller.signal, ...fetchOptions });
-      clearTimeout(id);
-      // Step 2: Raise non-2xx responses so retry policy can handle them.
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res;
-    } catch (err) {
-      clearTimeout(id);
-      if (attempt === retries) throw err;
-      // Step 3: Lightweight backoff reduces request bursts against flaky hosts.
-      await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
-    }
-  }
+/** Parse one ads.txt record without changing opaque, case-sensitive account IDs. */
+function parseAdsLine(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return { type: "empty", raw, trimmed };
+  if (trimmed.startsWith("#")) return { type: "comment", raw, trimmed };
+  const data = trimmed.split("#", 1)[0].trim();
+  const variable = data.match(/^([^\s=,]+)\s*=\s*(.*)$/);
+  if (variable) return { type: "variable", raw, trimmed, name: variable[1].toUpperCase(), value: variable[2].trim() };
+  const parts = data.split(";", 1)[0].split(",").map(part => part.trim());
+  const domain = normalizeAdvertisingDomain(parts[0]);
+  const error = reason => ({ type: "error", raw, trimmed, domain, reason });
+  if (parts.length < 3) return error("Too few fields");
+  if (parts.length > 4) return error("Too many fields");
+  const pubId = parts[1];
+  const relationship = parts[2].toUpperCase();
+  if (!domain) return error("Invalid advertising system domain");
+  if (!pubId || /\s/.test(pubId)) return error("Missing or invalid publisher ID");
+  if (relationship !== "DIRECT" && relationship !== "RESELLER") return error(`Invalid relationship: ${parts[2]}`);
+  if (parts[3] && /\s/.test(parts[3])) return error("Invalid certification authority ID");
+  return { type: "data", raw, trimmed, domain, pubId, relationship,
+    key: JSON.stringify([domain, pubId, relationship, parts[3] || ""]) };
 }
+
+function normalizeAdvertisingDomain(value) {
+  if (typeof value !== "string" || !value || /[\s/\\:%@?#\[\]]/.test(value)) return "";
+  try {
+    const host = (/^[\x00-\x7f]+$/.test(value) ? value.toLowerCase() : new URL(`https://${value}`).hostname).replace(/\.$/, "");
+    if (host.length > 253 || !host.includes(".") || !host.split(".").every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))) return "";
+    return host;
+  } catch { return ""; }
+}
+
+function matchesRegistryDomain(line, registryUrl) {
+  return line.type === "data" && line.domain === getRegistryDomain(registryUrl);
+}
+
+function getRegistryDomain(url) {
+  try { return normalizeAdvertisingDomain(new URL(url).hostname.replace(/^www\./, "")); }
+  catch { return ""; }
+}
+
+function getAdsStats(text) {
+  const analysis = analyzeAdsText(text);
+  return { lines: analysis.totalData, dupes: analysis.duplicateCount, errors: analysis.errors,
+    direct: analysis.direct, reseller: analysis.reseller };
+}
+
+function createAdsAnalysis(loaded) {
+  return { loaded, lines: [], totalData: 0, duplicateCount: 0, duplicateIndices: new Set(), errors: 0,
+    direct: 0, reseller: 0, keySet: new Set(), linesBySSP: Object.create(null), variables: new Map() };
+}
+
+function addAdsLine(analysis, seen, raw) {
+  const line = parseAdsLine(raw);
+  const index = analysis.lines.length;
+  analysis.lines.push(line);
+  if (line.type === "variable") {
+    if (!analysis.variables.has(line.name)) analysis.variables.set(line.name, []);
+    analysis.variables.get(line.name).push(line.value);
+  }
+  if (line.type === "error") analysis.errors++;
+  if (line.type !== "data") return;
+  if (seen.has(line.key)) {
+    analysis.duplicateIndices.add(seen.get(line.key)); analysis.duplicateIndices.add(index); analysis.duplicateCount++;
+  } else seen.set(line.key, index);
+  analysis.keySet.add(line.key);
+  analysis.totalData++;
+  if (line.relationship === "DIRECT") analysis.direct++;
+  else analysis.reseller++;
+  if (!analysis.linesBySSP[line.domain]) analysis.linesBySSP[line.domain] = [];
+  analysis.linesBySSP[line.domain].push({ id: line.pubId, type: line.relationship });
+}
+
+function analyzeAdsText(text) {
+  const analysis = createAdsAnalysis(text !== null && text !== undefined);
+  if (!analysis.loaded) return analysis;
+  const seen = new Map();
+  for (const raw of text.split(/\r\n|\r|\n/)) addAdsLine(analysis, seen, raw);
+  return analysis;
+}
+
+function throwIfCancelled(signal) {
+  if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+}
+
+function yieldTask(signal) {
+  throwIfCancelled(signal);
+  return new Promise((resolve, reject) => {
+    const cancel = () => { clearTimeout(timer); reject(new DOMException("Request cancelled", "AbortError")); };
+    const timer = setTimeout(() => { signal?.removeEventListener("abort", cancel); resolve(); }, 0);
+    signal?.addEventListener("abort", cancel, { once: true });
+  });
+}
+
+async function analyzeAdsTextAsync(text, signal) {
+  const analysis = createAdsAnalysis(text !== null && text !== undefined);
+  if (!analysis.loaded) return analysis;
+  const seen = new Map();
+  const rows = text.split(/\r\n|\r|\n/);
+  for (let start = 0; start < rows.length; start += 2000) {
+    throwIfCancelled(signal);
+    for (let i = start; i < Math.min(start + 2000, rows.length); i++) addAdsLine(analysis, seen, rows[i]);
+    if (start + 2000 < rows.length) await yieldTask(signal);
+  }
+  return analysis;
+}
+
+function normalizeSellersUrl(value) {
+  if (value === undefined || value === null || (typeof value === "string" && !value.trim())) return DEFAULT_SELLERS_URL;
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value.trim());
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || !url.hostname) return null;
+    url.hash = "";
+    return url.href;
+  } catch { return null; }
+}
+
+/** Callback APIs always settle, including runtime.lastError and synchronous failures. */
+function chromeCall(api, method, ...args) {
+  return new Promise((resolve, reject) => {
+    try {
+      api[method](...args, result => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(error.message || "Extension API error"));
+        else resolve(result);
+      });
+    } catch (error) { reject(error); }
+  });
+}
+

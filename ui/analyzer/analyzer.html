@@ -7,7 +7,7 @@
 </head>
 <body>
   <div class="top-bar">
-    <input type="text" id="domain-input" placeholder="Enter domain, e.g. example.com" />
+    <input type="text" id="domain-input" aria-label="Website URL or domain" placeholder="Website URL or domain, e.g. example.com" />
     <button id="analyze-btn">Analyze</button>
   </div>
 
@@ -36,7 +36,7 @@
         <span id="ads-redirect" class="redirect-badge" style="display:none;">Redirected</span>
       </div>
       <div class="column-search">
-        <input type="text" id="ads-search" placeholder="Search ads.txt…" />
+        <input type="text" id="ads-search" aria-label="Search ads.txt" placeholder="Search ads.txt…" />
         <span id="ads-search-count" class="search-count"></span>
         <button class="search-nav-btn" id="ads-search-prev" disabled title="Previous">▲</button>
         <button class="search-nav-btn" id="ads-search-next" disabled title="Next">▼</button>
@@ -45,7 +45,7 @@
 
       <div class="line-panel" id="ads-line-panel" style="display:none;">
         <div class="line-panel-header">
-          <select id="ads-ssp-dropdown"><option value="">Select SSP platform</option></select>
+          <select id="ads-ssp-dropdown" aria-label="Advertising platform for ads.txt"><option value="">Select SSP platform</option></select>
           <button class="line-verify-btn" id="ads-verify-btn" disabled>Verify</button>
           <button class="line-verify-all-btn" id="ads-verify-all-btn" disabled>All SSPs</button>
           <button class="line-cancel-btn" id="ads-cancel-btn" style="display:none;">Cancel</button>
@@ -68,7 +68,7 @@
         <span id="appads-redirect" class="redirect-badge" style="display:none;">Redirected</span>
       </div>
       <div class="column-search">
-        <input type="text" id="appads-search" placeholder="Search app-ads.txt…" />
+        <input type="text" id="appads-search" aria-label="Search app-ads.txt" placeholder="Search app-ads.txt…" />
         <span id="appads-search-count" class="search-count"></span>
         <button class="search-nav-btn" id="appads-search-prev" disabled title="Previous">▲</button>
         <button class="search-nav-btn" id="appads-search-next" disabled title="Next">▼</button>
@@ -77,7 +77,7 @@
 
       <div class="line-panel" id="appads-line-panel" style="display:none;">
         <div class="line-panel-header">
-          <select id="appads-ssp-dropdown"><option value="">Select SSP platform</option></select>
+          <select id="appads-ssp-dropdown" aria-label="Advertising platform for app-ads.txt"><option value="">Select SSP platform</option></select>
           <button class="line-verify-btn" id="appads-verify-btn" disabled>Verify</button>
           <button class="line-verify-all-btn" id="appads-verify-all-btn" disabled>All SSPs</button>
           <button class="line-cancel-btn" id="appads-cancel-btn" style="display:none;">Cancel</button>
@@ -94,9 +94,12 @@
     </div>
   </div>
 
-  <div id="status-msg" class="status-msg">Enter a domain and click Analyze to begin.</div>
+  <div id="status-msg" class="status-msg" role="status" aria-live="polite">Enter a domain and click Analyze to begin.</div>
 
   <script src="../../shared/utils.js"></script>
+  <script src="../../shared/network.js"></script>
+  <script src="../../shared/registry.js"></script>
+  <script src="../../shared/ui.js"></script>
   <script src="analyzer.js"></script>
 </body>
 </html>

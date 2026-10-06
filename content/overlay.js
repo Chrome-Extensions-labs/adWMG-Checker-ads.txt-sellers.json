@@ -1,28 +1,23 @@
-(() => {
+(async () => {
+  // Only replace a plain-text ads file, never an HTML error page or a similarly named page.
+  if (!document.body || document.getElementById("lines-checker-style") ||
+      document.documentElement.hasAttribute("data-lines-checker-viewer") ||
+      !/\/(?:app-)?ads\.txt$/i.test(window.location.pathname) || document.contentType === "text/html") return;
   const rawText = document.body.textContent || document.body.innerText || "";
 
-  function findDomainField(text, fieldName) {
-    if (!text) return null;
-    const lines = text.split(/\r\n|\r|\n/);
-    for (const rawLine of lines) {
-      const line = rawLine.replace(/^[\s#]+/, "");
-      const regex = new RegExp(`^${fieldName}\\s*[=,:]?\\s*([^\\s#,]+)`, "i");
-      const match = line.match(regex);
-      if (match) return match[1];
-    }
-    return null;
-  }
+  if (rawText.length > 5 * 1024 * 1024) return;
+  document.documentElement.setAttribute("data-lines-checker-viewer", "loading");
+  const analysis = await analyzeAdsTextAsync(rawText);
+  const field = name => analysis.variables.get(name)?.[0] || null;
+  const owner = field("OWNERDOMAIN");
+  const manager = field("MANAGERDOMAIN");
+  const contact = field("CONTACT");
+  const contactEmail = field("CONTACT-EMAIL");
+  const isAdsTxt = analysis.totalData > 0 || analysis.variables.size > 0;
 
-  const owner = findDomainField(rawText, "OWNERDOMAIN");
-  const manager = findDomainField(rawText, "MANAGERDOMAIN");
-  const contact = findDomainField(rawText, "CONTACT");
-  const contactEmail = findDomainField(rawText, "CONTACT-EMAIL");
-
-  const isAdsTxt = /,\s*(DIRECT|RESELLER)/i.test(rawText) || 
-                   /OWNERDOMAIN\s*=/i.test(rawText) || 
-                   /MANAGERDOMAIN\s*=/i.test(rawText);
-
+  if (!isAdsTxt) { document.documentElement.removeAttribute("data-lines-checker-viewer"); return; }
   const style = document.createElement('style');
+  style.id = 'lines-checker-style';
   style.textContent = `
     :root {
       --bg-color: #ffffff;
@@ -30,7 +25,7 @@
       --comment-color: #6e7781;
       --key-color: #0550ae;
       --value-color: #0a3069;
-      --domain-color: #a8c7fa;
+      --domain-color: #243b64;
       --pubid-color: #9a6700;
       --direct-color: #28518a;
       --reseller-color: #d1242f;
@@ -102,7 +97,12 @@
       font-size: 14px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       border: 1px solid var(--overlay-border);
-      min-width: 400px;
+      width: 400px;
+      max-width: calc(100vw - 40px);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      overflow-wrap: anywhere;
+      box-sizing: border-box;
       backdrop-filter: blur(5px);
       line-height: 1.5;
     }
@@ -125,6 +125,9 @@
       top: 5px;
       right: 8px;
       cursor: pointer;
+      background: transparent;
+      border: 0;
+      padding: 4px;
       color: var(--overlay-close);
       font-size: 18px;
       line-height: 12px;
@@ -158,6 +161,10 @@
       color: var(--btn-hover-text);
       border-color: var(--btn-hover-bg);
     }
+    .lines-checker-analyze-btn:focus-visible, .lines-checker-close-btn:focus-visible {
+      outline: 2px solid var(--domain-color);
+      outline-offset: 2px;
+    }
 
     .lines-checker-code-block {
       word-wrap: break-word;
@@ -184,21 +191,6 @@
       title.textContent = "Domains Found:";
       title.className = "lines-checker-overlay-title";
       container.appendChild(title);
-    }
-
-    function safeHref(value) {
-      if (!value) return null;
-      let href = value.trim();
-      if (!href.startsWith("http://") && !href.startsWith("https://")) {
-        href = "https://" + href;
-      }
-      try {
-        const url = new URL(href);
-        if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
-        return null;
-      } catch {
-        return null;
-      }
     }
 
     function createRow(label, value, isLink) {
@@ -253,7 +245,9 @@
     createRow("Contact", contact);
     createRow("Contact-email", contactEmail, false);
 
-    const closeBtn = document.createElement("div");
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.setAttribute("aria-label", "Close file information");
     closeBtn.textContent = "×";
     closeBtn.className = "lines-checker-close-btn";
     closeBtn.onclick = () => container.remove();
@@ -269,12 +263,10 @@
       .replace(/'/g, "&#039;");
   }
 
-  function applySyntaxHighlighting() {
+  async function applySyntaxHighlighting() {
     if (!isAdsTxt) return;
 
-    const lines = rawText.split(/\r?\n/);
-    const highlightedLines = lines.map(line => {
-      let cleanLine = line.replace(/\r$/, '');
+    const highlightLine = cleanLine => {
       
       if (cleanLine.trim().startsWith("#")) {
         return `<span class="lines-checker-token-comment">${escapeHtml(cleanLine)}</span>`;
@@ -290,7 +282,7 @@
       }
 
       let resultHtml = "";
-      const varMatch = dataPart.match(/^(\s*[A-Za-z0-9-]+\s*)([=:])(.*)$/);
+      const varMatch = dataPart.match(/^(\s*[A-Za-z0-9-]+\s*)(=)(.*)$/);
       const upperKey = varMatch ? varMatch[1].trim().toUpperCase() : "";
 
       if (varMatch && ["OWNERDOMAIN", "MANAGERDOMAIN", "CONTACT", "SUBDOMAIN", "CONTACT-EMAIL"].includes(upperKey)) {
@@ -307,11 +299,8 @@
 
           if (i === 0) {
             if (trimmed) {
-              let href = trimmed;
-              if (!href.startsWith("http://") && !href.startsWith("https://")) {
-                href = "https://" + href;
-              }
-              coloredPart = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="lines-checker-token-domain">${partText}</a>`;
+              const href = safeHref(trimmed);
+              coloredPart = href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="lines-checker-token-domain">${partText}</a>` : `<span class="lines-checker-token-domain">${partText}</span>`;
             } else {
               coloredPart = `<span class="lines-checker-token-domain">${partText}</span>`;
             }
@@ -340,15 +329,13 @@
       }
 
       return resultHtml;
-    });
+    };
 
     document.body.innerHTML = "";
-    document.body.className = "lines-checker-custom-viewer";
+    document.body.classList.add("lines-checker-custom-viewer");
     
     const newPre = document.createElement("pre");
     newPre.className = "lines-checker-code-block";
-    newPre.innerHTML = highlightedLines.join("\n");
-
     document.body.appendChild(newPre);
 
     if (container) {
@@ -363,14 +350,22 @@
     analyzeBtn.className = "lines-checker-analyze-btn";
     
     analyzeBtn.onclick = () => {
-      const currentDomain = window.location.hostname;
-      chrome.runtime.sendMessage({ type: "openAnalyzer", domain: currentDomain });
+      chrome.runtime.sendMessage({ type: "openAnalyzer", siteUrl: window.location.origin }, () => { void chrome.runtime.lastError; });
     };
 
     leftContainer.appendChild(analyzeBtn);
     document.body.appendChild(leftContainer);
+    try {
+      await renderInBatches(newPre, analysis.lines, (line, index) => {
+        const span = document.createElement("span");
+        // Every fragment derived from the file is escaped by highlightLine.
+        span.innerHTML = highlightLine(line.raw) + (index < analysis.lines.length - 1 ? "\n" : "");
+        return span;
+      });
+    } catch { newPre.textContent = rawText; }
+    document.documentElement.setAttribute("data-lines-checker-viewer", "ready");
   }
 
-  applySyntaxHighlighting();
+  await applySyntaxHighlighting();
 
-})();
+})().catch(() => { /* Keep plain-text access available if the optional viewer fails. */ });

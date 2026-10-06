@@ -49,6 +49,10 @@ body {
 
 .tab {
   flex: 1;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
   padding: 10px 12px;
   display: flex;
   justify-content: space-between;
@@ -66,6 +70,8 @@ body {
 .tab.active { background: var(--brand-color); font-weight: 600; }
 
 .settings-toggle {
+  background: transparent;
+  border: 0;
   padding: 0 5px;
   color: #fff;
   cursor: pointer;
@@ -153,6 +159,12 @@ body {
 }
 
 .filter-status-text {
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
   font-size: 11px;
   color: #666;
   font-weight: 500;
@@ -257,7 +269,8 @@ body {
 
 .quick-stats {
   display: flex;
-  gap: 15px;
+  gap: 10px;
+  flex-wrap: wrap;
   color: #444;
 }
 
@@ -321,3 +334,20 @@ body {
   border-left: 3px solid #e03131;
   color: #c92a2a;
 }
+
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid #6b94d6;
+  outline-offset: 2px;
+}
+.settings-panel input { min-width: 0; }
+.settings-panel button:disabled { opacity: 0.6; cursor: wait; }
+.settings-status, .data-status {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 5px 10px;
+  color: #243b64;
+  background: #e8eef8;
+  overflow-wrap: anywhere;
+}
+.settings-status:empty, .data-status:empty { display: none; }

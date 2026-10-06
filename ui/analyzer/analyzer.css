@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    analyzer.css — Enhanced ads.txt / app-ads.txt Analyzer
-   Version 7.4.0
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -369,6 +368,10 @@ body {
 .line-row:hover { background: var(--surface2); }
 
 .line-id {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
   font-family: "Consolas", monospace;
   font-size: 13px;
   color: var(--brand-color);
@@ -500,4 +503,8 @@ mark.line-highlight {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid #6b94d6;
+  outline-offset: 2px;
 }
