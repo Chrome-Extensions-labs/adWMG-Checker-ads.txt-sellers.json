@@ -293,7 +293,7 @@ logDiagnostics({
 
 ```javascript
 // Normalize data for deterministic seller matching.
-const brand = getBrandName("https://adwmg.com/sellers.json");
+const brand = getBrandName("https://pubmatic.com/sellers.json");
 const domain = cleanDomain("https://www.Example.com/path?query=1");
 const profileUrl = safeHref(domain);
 
@@ -321,14 +321,14 @@ if (!refreshResult?.ok) {
 | Key | Type | Description |
 |---|---|---|
 | `custom_sellers_url` | `string` | User-provided override for the default sellers registry endpoint |
-| `adwmg_sellers_cache` | `array` | Cached value derived from `sellers.json.sellers` |
-| `adwmg_sellers_ts` | `number` | Epoch timestamp (ms) of the last successful sellers cache write |
+| `pubmatic_sellers_cache` | `array` | Cached value derived from `sellers.json.sellers` |
+| `pubmatic_sellers_ts` | `number` | Epoch timestamp (ms) of the last successful sellers cache write |
 
 ### Runtime Constants
 
 | Constant | Default | Purpose |
 |---|---|---|
-| `DEFAULT_SELLERS_URL` | `https://adwmg.com/sellers.json` | Primary registry URL used for seller reconciliation |
+| `DEFAULT_SELLERS_URL` | `https://pubmatic.com/sellers.json` | Primary registry URL used for seller reconciliation |
 | `SCAN_COOLDOWN_MS` | `60000` | Minimum interval between automatic tab scans |
 | `FETCH_TIMEOUT_MS` | `10000` | Request timeout for remote text assets |
 | `FETCH_RETRIES` | `3` | Retry attempts for fetch failures |
