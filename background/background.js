@@ -1,8 +1,9 @@
 importScripts('../shared/utils.js');
 
-const CACHE_KEY = "adwmg_sellers_cache";
-const CACHE_TS_KEY = "adwmg_sellers_ts";
-const BADGE_BG_COLOR = "#21aeb3";
+const CACHE_KEY = "sellers_cache";
+const CACHE_TS_KEY = "sellers_ts";
+const CACHE_URL_KEY = "sellers_cache_url";
+const BADGE_BG_COLOR = "#243b64";
 const SCAN_COOLDOWN_MS = 60 * 1000;
 const FETCH_TIMEOUT_MS = 10000;
 const FETCH_RETRIES = 3;
@@ -29,6 +30,7 @@ async function fetchAndCacheSellers() {
     const items = {};
     items[CACHE_KEY] = sellers;
     items[CACHE_TS_KEY] = Date.now();
+    items[CACHE_URL_KEY] = urlToFetch;
     await new Promise((resolve) => chrome.storage.local.set(items, () => {
       if (chrome.runtime.lastError) return resolve();
       resolve();
@@ -41,8 +43,10 @@ async function fetchAndCacheSellers() {
 
 function getCachedSellers() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([CACHE_KEY, CACHE_TS_KEY], (res) => {
+    chrome.storage.local.get([CACHE_KEY, CACHE_TS_KEY, CACHE_URL_KEY, CUSTOM_URL_KEY], (res) => {
       if (chrome.runtime.lastError) return resolve({ sellers: [], ts: 0 });
+      const currentUrl = res[CUSTOM_URL_KEY] || DEFAULT_SELLERS_URL;
+      if (res[CACHE_URL_KEY] !== currentUrl) return resolve({ sellers: [], ts: 0 });
       resolve({
         sellers: Array.isArray(res[CACHE_KEY]) ? res[CACHE_KEY] : [],
         ts: res[CACHE_TS_KEY] || 0
@@ -88,7 +92,7 @@ async function getSellersDomain() {
   return getBrandName(url);
 }
 
-async function executeCountadwmgLines(tabId, origin) {
+async function executeCountSellerLines(tabId, origin) {
   const domain = await getSellersDomain();
   try {
     const results = await chrome.scripting.executeScript({
@@ -107,7 +111,7 @@ async function executeCountadwmgLines(tabId, origin) {
               .catch(() => { clearTimeout(id); resolve(null); });
           });
         }
-        function countadwmgLines(text, brand) {
+        function countSellerLines(text, brand) {
           if (!text) return 0;
           return text.replace(/\r\n|\r/g, "\n").split("\n").filter(l => l.toLowerCase().includes(brand.toLowerCase())).length;
         }
@@ -119,9 +123,9 @@ async function executeCountadwmgLines(tabId, origin) {
           ]);
           return {
             ok: true,
-            adsCount: countadwmgLines(adsText, filterDomain),
+            adsCount: countSellerLines(adsText, filterDomain),
             appAdsLocalFailed: appAdsTextLocal === null,
-            appAdsCountLocal: countadwmgLines(appAdsTextLocal, filterDomain)
+            appAdsCountLocal: countSellerLines(appAdsTextLocal, filterDomain)
           };
         })();
       },
@@ -156,7 +160,7 @@ async function processScan(tabId) {
   }));
   if (!tab || !tab.url || !/^https?:\/\//i.test(tab.url)) return null;
   const origin = new URL(tab.url).origin;
-  const scanRes = await executeCountadwmgLines(tabId, origin);
+  const scanRes = await executeCountSellerLines(tabId, origin);
   countsByTab[tabId] = scanRes.count;
   return scanRes.count;
 }
@@ -196,8 +200,14 @@ chrome.tabs.onRemoved.addListener((tabId) => { cleanupTab(tabId); });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message.type === "getSellersCache") {
-      const cached = await getCachedSellers();
-      if (!cached.ts || (Date.now() - cached.ts) > FIXED_CACHE_TTL_MS) fetchAndCacheSellers();
+      let cached = await getCachedSellers();
+      if (!cached.ts) {
+        // Return the new registry on the first request, including after changing providers.
+        const sellers = await fetchAndCacheSellers();
+        cached = { sellers: sellers || [], ts: sellers ? Date.now() : 0 };
+      } else if ((Date.now() - cached.ts) > FIXED_CACHE_TTL_MS) {
+        fetchAndCacheSellers();
+      }
       sendResponse({ sellers: cached.sellers, ts: cached.ts });
     } else if (message.type === "refreshSellers") {
       const sellers = await fetchAndCacheSellers();

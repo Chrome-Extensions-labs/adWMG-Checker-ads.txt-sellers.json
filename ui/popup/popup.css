@@ -1,10 +1,10 @@
 :root {
   --bg-color: #fff;
   --text-color: #333;
-  --brand-color: #21aeb3;
+  --brand-color: #243b64;
   --border-color: #ddd;
-  --brand-light-bg: #d4f1f2;
-  --dark-header: #0b2c2d;
+  --brand-light-bg: #e8eef8;
+  --dark-header: #14233b;
 }
 
 html {
@@ -61,7 +61,7 @@ body {
 }
 .tab:last-child { border-right: none; }
 .tab:hover { 
-    background: #1a6b6e;
+    background: #304d7c;
 }
 .tab.active { background: var(--brand-color); font-weight: 600; }
 
@@ -80,17 +80,18 @@ body {
   padding: 10px;
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid #21aeb3;
+  border-bottom: 1px solid #243b64;
 }
 .settings-panel input {
   flex: 1;
-  background: #0b2d2f;
-  border: 1px solid #21aeb3;
+  background: #1b2d4a;
+  border: 1px solid #243b64;
   color: #fff;
   padding: 5px 8px;
   font-size: 12px;
   border-radius: 4px;
 }
+.settings-panel input::placeholder { color: #a8b9d4; }
 .settings-panel button {
   background: var(--brand-color);
   color: #fff;
@@ -102,13 +103,13 @@ body {
 }
 
 .settings-panel button#force-refresh-cache {
-  background: #2b5e5e;
+  background: #304769;
   margin-left: 4px;
   padding: 5px 8px;
 }
 
 .settings-panel button#force-refresh-cache:hover {
-  background: #3a7575;
+  background: #3f5d89;
 }
 
 .settings-panel button#force-refresh-cache:disabled {
@@ -204,7 +205,7 @@ body {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.badge.success { background: #e6fcf5; color: #0ca678; border: 1px solid #0ca678; }
+.badge.success { background: #e8eef8; color: #28518a; border: 1px solid #28518a; }
 .badge.error { background: #fff5f5; color: #fa5252; border: 1px solid #fa5252; }
 .badge.neutral { background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
 
@@ -216,7 +217,7 @@ body {
   word-wrap: break-word;
   font-size: 12px;
   line-height: 1.0;
-  min-height: 450px;
+  min-height: 0;
   max-height: 520px;
   overflow-y: auto;
   border: none;
@@ -233,7 +234,7 @@ body {
 .line-row.highlight-own-domain {
   background-color: var(--brand-light-bg);
   border-left: 3px solid var(--brand-color);
-  color: #1a4f52;
+  color: #1d3357;
   font-weight: 600;
   margin-top: 2px;
   margin-bottom: 2px;
@@ -267,7 +268,7 @@ body {
 
 /* D/R ratio color coding in quick stats */
 .qa-dr-value.dr-green {
-  color: #0ca678;
+  color: #28518a;
 }
 .qa-dr-value.dr-red {
   color: #fa5252;
@@ -295,10 +296,10 @@ body {
 .footer {
   background: var(--brand-light-bg);
   border-top: 1px solid var(--border-color);
-  padding: 2px 10px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
 }
 .footer-link--oss { gap: 5px; }
@@ -314,7 +315,6 @@ body {
   font-weight: 500;
 }
 .footer-link:hover { color: var(--brand-color); }
-.footer-icon { width: 14px; height: 14px; object-fit: contain; }
 
 .line-critical-error {
   background-color: #fff0f0;

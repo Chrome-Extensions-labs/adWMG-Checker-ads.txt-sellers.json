@@ -1,4 +1,4 @@
-const DEFAULT_SELLERS_URL = "https://adwmg.com/sellers.json";
+const DEFAULT_SELLERS_URL = "https://pubmatic.com/sellers.json";
 const CUSTOM_URL_KEY = "custom_sellers_url";
 
 /**
@@ -8,8 +8,8 @@ const CUSTOM_URL_KEY = "custom_sellers_url";
  * @returns {string} Brand-like hostname token used for text matching.
  *
  * @example
- * const brand = getBrandName("https://adwmg.com/sellers.json");
- * // brand === "adwmg"
+ * const brand = getBrandName("https://pubmatic.com/sellers.json");
+ * // brand === "pubmatic"
  */
 function getBrandName(url) {
   try {
@@ -25,9 +25,9 @@ function getBrandName(url) {
       }
       return secondLast;
     }
-    return parts[0] || "adwmg";
+    return parts[0] || "pubmatic";
   } catch {
-    return "adwmg";
+    return "pubmatic";
   }
 }
 

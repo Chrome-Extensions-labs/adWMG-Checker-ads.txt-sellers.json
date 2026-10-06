@@ -4,10 +4,10 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --brand-color: #21aeb3;
-  --brand-glow: rgba(33, 174, 179, 0.1);
-  --brand-light-bg: #d4f1f2;
-  --dark-header: #0b2c2d;
+  --brand-color: #243b64;
+  --brand-glow: rgba(36, 59, 100, 0.1);
+  --brand-light-bg: #e8eef8;
+  --dark-header: #14233b;
   --bg: #f4f6f7;
   --surface: #ffffff;
   --surface2: #f8fafb;
@@ -16,9 +16,9 @@
   --text: #1a2332;
   --text2: #4a5568;
   --muted: #8896a6;
-  --green: #0ca678;
-  --green-bg: #e6fcf5;
-  --green-border: #b2f2d5;
+  --green: #28518a;
+  --green-bg: #e8eef8;
+  --green-border: #b8c9e6;
   --yellow: #e8a007;
   --yellow-bg: #fff9e6;
   --yellow-border: #fde68a;
@@ -166,7 +166,7 @@ body {
 }
 
 .column-header a {
-  color: #5ee0e5;
+  color: #a8c7fa;
   text-decoration: none;
   font-weight: 600;
   cursor: pointer;
@@ -467,11 +467,11 @@ body {
 .line-error { background: var(--red-bg); color: var(--red); border-left: 3px solid var(--red); }
 .line-duplicate { background: var(--yellow-bg); color: #866a00; border-left: 3px solid var(--yellow); }
 .line-discrepancy { background: var(--blue-bg); color: var(--blue); border-left: 3px solid #339af0; }
-.line-search-match { background: rgba(33, 174, 179, 0.1); }
-.line-search-current { background: rgba(33, 174, 179, 0.22); outline: 1px solid var(--brand-color); }
+.line-search-match { background: rgba(36, 59, 100, 0.1); }
+.line-search-current { background: rgba(36, 59, 100, 0.22); outline: 1px solid var(--brand-color); }
 
 mark.search-highlight {
-  background: rgba(33, 174, 179, 0.2);
+  background: rgba(36, 59, 100, 0.2);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;

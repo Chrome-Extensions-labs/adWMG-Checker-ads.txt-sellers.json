@@ -21,7 +21,7 @@ ui/
 assets/
   icons/
     icon128.png
-    iconlogo.png
+    icon.svg
 scripts/
   restructure_sources.sh
 trigger action/
@@ -49,7 +49,7 @@ manifest.json
 2. `ui/popup/popup.html`
    - Local links remain `popup.css` and `popup.js`.
    - Shared utility script remains `../../shared/utils.js`.
-   - Footer logo remains `../../assets/icons/iconlogo.png`.
+   - The footer uses an inline GitHub icon and links to the independent project repository.
 
 3. `ui/analyzer/analyzer.html`
    - Local links remain `analyzer.css` and `analyzer.js`.
