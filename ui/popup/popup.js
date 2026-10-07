@@ -74,7 +74,7 @@
   function checkDomainField(analysis, fieldName) {
     const value = analysis.variables.get(fieldName)?.[0];
     if (!value) return { status: "NOT FOUND", value: null };
-    const domain = cleanDomain(value);
+    const domain = cleanDomain(parseDomainDirective(value, fieldName).domain);
     const site = cleanDomain(currentTabDomain);
     return { status: domain && site && (domain === site || site.endsWith("." + domain)) ? "MATCH" : "MISMATCH", value };
   }

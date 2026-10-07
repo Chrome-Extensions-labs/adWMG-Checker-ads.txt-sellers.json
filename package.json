@@ -1,12 +1,16 @@
 {
   "name": "lines-checker-extension",
-  "version": "7.5.0",
+  "version": "7.6.1",
   "private": true,
   "scripts": {
     "check": "node scripts/check.cjs",
     "test": "node --test",
     "test:browser": "node tests/browser.cjs"
   },
-  "engines": { "node": ">=20" },
-  "devDependencies": { "playwright": "1.62.1" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
 }

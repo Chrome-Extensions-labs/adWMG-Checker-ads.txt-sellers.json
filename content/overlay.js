@@ -20,7 +20,9 @@
   style.id = 'lines-checker-style';
   style.textContent = `
     :root {
+      color-scheme: light;
       --bg-color: #ffffff;
+      background-color: var(--bg-color);
       --text-color: #24292f;
       --comment-color: #6e7781;
       --key-color: #0550ae;
@@ -45,7 +47,8 @@
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #101a2b;
+        color-scheme: dark;
+        --bg-color: #000000;
         --text-color: #c9d1d9;
         --comment-color: #8896a6;
         --key-color: #d2a8ff;
@@ -117,6 +120,7 @@
 
     .lines-checker-overlay-row { margin-bottom: 6px; }
     .lines-checker-overlay-label { font-weight: bold; margin-right: 5px; color: var(--overlay-label); }
+    .lines-checker-overlay-scope { color: var(--overlay-title); }
     .lines-checker-overlay-link { color: var(--overlay-text); text-decoration: none; cursor: pointer; }
     .lines-checker-overlay-divider { border-top: 1px solid var(--overlay-border); margin: 10px 0 15px 0; }
 
@@ -193,7 +197,7 @@
       container.appendChild(title);
     }
 
-    function createRow(label, value, isLink) {
+    function createRow(label, value, isLink, domainField) {
       if (!value) return;
 
       const row = document.createElement("div");
@@ -204,16 +208,24 @@
       labelSpan.className = "lines-checker-overlay-label";
 
       if (isLink !== false) {
-        const href = safeHref(value);
+        const directive = domainField ? parseDomainDirective(value, domainField) : null;
+        const href = directive ? directive.href : safeHref(value);
         if (href) {
           const link = document.createElement("a");
           link.href = href;
-          link.textContent = value;
+          link.textContent = directive ? directive.domain : value;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.className = "lines-checker-overlay-link";
           row.appendChild(labelSpan);
           row.appendChild(link);
+          if (directive?.scope) {
+            const scope = document.createElement("span");
+            scope.className = "lines-checker-overlay-scope";
+            scope.textContent = ` (${directive.scope})`;
+            scope.title = "Additional MANAGERDOMAIN metadata";
+            row.appendChild(scope);
+          }
         } else {
           row.appendChild(labelSpan);
           row.appendChild(document.createTextNode(value));
@@ -226,8 +238,8 @@
       container.appendChild(row);
     }
 
-    createRow("OwnerDomain", owner);
-    createRow("ManagerDomain", manager);
+    createRow("OwnerDomain", owner, true, "OWNERDOMAIN");
+    createRow("ManagerDomain", manager, true, "MANAGERDOMAIN");
 
     if (hasDomains && hasContact) {
       const divider = document.createElement("div");

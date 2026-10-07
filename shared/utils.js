@@ -74,8 +74,22 @@ function safeHref(value) {
   if (/^[a-z][a-z0-9+.-]*:/i.test(input) && !/^https?:\/\//i.test(input)) return null;
   try {
     const url = new URL(/^https?:\/\//i.test(input) ? input : "https://" + input);
-    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+    const hostname = url.hostname.replace(/\.$/, "");
+    const validHost = normalizeAdvertisingDomain(hostname) ||
+      /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(hostname) ||
+      (hostname.startsWith("[") && hostname.endsWith("]")); // IPv6 was validated by URL.
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password && validHost ? url.href : null;
   } catch { return null; }
+}
+
+/** MANAGERDOMAIN's comma-delimited scope is metadata, never part of its hostname. */
+function parseDomainDirective(value, fieldName) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  const separator = fieldName === "MANAGERDOMAIN" ? raw.indexOf(",") : -1;
+  const hostname = separator < 0 ? raw : raw.slice(0, separator).trim();
+  const domain = normalizeAdvertisingDomain(hostname);
+  return { domain, href: domain ? `https://${domain}/` : null,
+    scope: separator < 0 ? "" : raw.slice(separator + 1).trim() };
 }
 
 /** Parse one ads.txt record without changing opaque, case-sensitive account IDs. */

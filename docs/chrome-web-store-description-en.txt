@@ -1,0 +1,81 @@
+Lines Checker helps you validate ads.txt and app-ads.txt files, detect errors and duplicates, and verify seller IDs against sellers.json — directly in Chrome.
+
+Built for AdOps teams, publishers, app developers and programmatic advertising professionals, it brings file validation, seller registry lookup and inventory review into one workspace. Spend less time reading raw text and more time investigating the records that need attention.
+
+ 🔎 Find errors and inspect publisher files
+
+Open a website and check its ads.txt and app-ads.txt files from the extension popup. Use the analyzer for a detailed review or enter a domain or HTTP/HTTPS URL to inspect another website.
+
+- Highlight malformed records, missing or invalid publisher IDs, incorrect field counts and unsupported relationship values.
+- Identify duplicate entries while preserving case-sensitive seller IDs.
+- Review OWNERDOMAIN and MANAGERDOMAIN values with domain-match indicators.
+- See Last-Modified dates when supplied by the server.
+- Follow source links that reflect redirects and preserve original hostnames and custom ports.
+
+ 🔗 Cross-reference seller IDs with sellers.json
+
+Move from an advertising record to its seller registry entry without manually searching long JSON files.
+
+- See whether an ID is found, missing or marked confidential.
+- Distinguish unavailable registries and timeouts from a missing seller ID.
+- Use PubMatic as the default popup registry or configure another sellers.json URL.
+- Select an SSP in the analyzer or verify all SSPs found in the file.
+- Filter records by the configured provider’s advertising-system domain.
+
+ 📊 Compare files and review advertising relationships
+
+View ads.txt and app-ads.txt side by side in a dedicated analyzer workspace.
+
+- Highlight duplicate records and syntax issues.
+- See records that are absent from the other file.
+- Review record counts, duplicate totals and error counts.
+- Inspect DIRECT and RESELLER totals and their D/R ratio.
+
+These statistics support supply path optimization (SPO) reviews by making declared advertising relationships easier to inspect. Differences between web and app files provide context for investigation; the two files may serve different purposes.
+
+ Find the account you need
+- Search either file and move between matching records.
+- Select a seller ID in the verification results to locate and highlight its source entry.
+- Navigate seller IDs using the keyboard.
+- Switch between provider-filtered records and the complete file.
+
+Open a plain-text ads.txt or app-ads.txt page directly to use the built-in file viewer. Syntax highlighting makes domains, account IDs and relationship types easier to scan, while available domain and contact information appears alongside the file.
+
+ ⚡ Keep daily AdOps checks moving
+
+- Check per-tab badge counts for records matching your configured provider.
+- Inspect text files while the seller registry is still loading.
+- Refresh files and registry data when you need a fresh lookup.
+- Continue using valid cached seller data after a failed refresh, with a visible warning.
+- Cancel verification tasks when your review changes direction.
+- Distinguish HTML error pages and retrieval failures from valid empty files.
+
+Large files are processed and displayed in batches to improve responsiveness. Outdated checks are prevented from replacing a newer analysis.
+
+ Who is Lines Checker for?
+
+- Publishers reviewing their web and app inventory declarations.
+- AdOps engineers troubleshooting seller IDs and partner-file issues.
+- App developers and monetization teams checking app-ads.txt records.
+- QA teams reviewing publisher onboarding and recent file updates.
+- Programmatic advertising professionals inspecting declared selling relationships.
+
+ 🔐 Local analysis and open source
+
+- Parsing, file comparison and seller ID matching take place in your browser.
+- Files are fetched directly from publisher websites and seller registry endpoints.
+- Registry settings and cached seller data are stored locally on your device.
+- No account registration, spreadsheets or command-line scripts are required to get started.
+
+Lines Checker is an independent open-source project. Seller verification reports whether an account ID appears in a registry; commercial authorization and complete supply-chain validation require additional context.
+
+Get started in three steps
+
+1. Add Lines Checker to Chrome.
+2. Open a publisher website and launch the extension.
+3. Review the files, check seller IDs and open the analyzer for a closer look.
+
+Make ads.txt validation, app-ads.txt analysis and sellers.json lookup part of your everyday Chrome workflow.
+--- 
+For business inquiries: Devs-In-Exile.pages.dev/
+An independent open-source project published on GitHub: github.com/Chrome-Extensions-labs/ads.txt-app-ads.txt-sellers.json-Lines-Checker

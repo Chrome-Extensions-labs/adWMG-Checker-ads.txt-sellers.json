@@ -14,7 +14,7 @@ let registryMode = 'slow';
 let adsMode = 'normal';
 let registryCalls = 0;
 const record = '127.0.0.1, Ab-1:Case, DIRECT';
-const normalAds = `# OWNERDOMAIN=wrong.example\nOWNERDOMAIN=127.0.0.1\n${record}\n${record} # duplicate\n127.0.0.1, missing, RESELLER\n127.0.0.1, id, INVALID\nother.example, Ab-1:Case, DIRECT\n# <script> is a comment\n`;
+const normalAds = `# OWNERDOMAIN=wrong.example\nOWNERDOMAIN=127.0.0.1\nMANAGERDOMAIN=127.0.0.1,in-game\n${record}\n${record} # duplicate\n127.0.0.1, missing, RESELLER\n127.0.0.1, id, INVALID\nother.example, Ab-1:Case, DIRECT\n# <script> is a comment\n`;
 const registry = { sellers: [{ seller_id: 'Ab-1:Case', domain: '127.0.0.1', seller_type: 'PUBLISHER' }] };
 const server = http.createServer((req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -63,6 +63,7 @@ const report = name => console.log(`PASS ${name}`);
   await popup.locator('#ads-tab').click();
   await waitText(popup, '#output', 'Ab-1:Case');
   assert.equal(await popup.locator('#owner-badge').textContent(), 'OWNER: MATCH');
+  assert.equal(await popup.locator('#manager-badge').textContent(), 'MANAGER: MATCH');
   assert.equal(await popup.locator('#seller-line-count').textContent(), '—');
   report('popup files and metadata available before slow registry completes');
   await waitText(popup, '#seller-line-count', '1');
@@ -189,10 +190,14 @@ const report = name => console.log(`PASS ${name}`);
   await viewer.waitForSelector('#lines-checker-style', { state: 'attached' });
   await viewer.waitForFunction(() => document.querySelector('.lines-checker-code-block')?.textContent.includes('Ab-1:Case'));
   assert.equal(await viewer.locator('.lines-checker-code-block').textContent(), normalAds);
+  const managerLink = viewer.locator('.lines-checker-overlay-row').filter({ hasText: 'ManagerDomain:' }).locator('a');
+  assert.equal(await managerLink.getAttribute('href'), 'https://127.0.0.1/');
+  assert.equal(await managerLink.textContent(), '127.0.0.1');
+  assert.equal(await viewer.locator('.lines-checker-overlay-scope').textContent(), ' (in-game)');
   await viewer.addScriptTag({ path: path.join(root, 'content/overlay.js') });
   assert.equal(await viewer.locator('#lines-checker-style').count(), 1);
   await viewer.emulateMedia({ colorScheme: 'dark' });
-  assert.equal(await viewer.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(16, 26, 43)');
+  assert.equal(await viewer.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(0, 0, 0)');
   report('real content-script injection, original text preservation and dark theme');
 
   // Stop the actual extension service worker through CDP, then wake it via messaging.

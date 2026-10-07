@@ -41,11 +41,30 @@ test('registry matching uses domains rather than ID or comment substrings', () =
 
 test('unsafe URLs and malformed records are rejected', () => {
   const h = helpers();
-  for (const value of ['javascript:alert(1)', 'data:text/html,test', 'https://user:pass@example.com', 'https://example.com:bad', 42]) assert.equal(h.safeHref(value), null);
+  for (const value of ['javascript:alert(1)', 'data:text/html,test', 'https://user:pass@example.com', 'https://example.com:bad', 'https://anzu.io,in-game/', 'example.com,another.example', 42]) assert.equal(h.safeHref(value), null);
   assert.equal(h.safeHref('HTTPS://Example.com'), 'https://example.com/');
   assert.equal(h.normalizeSellersUrl('ftp://example.com/sellers.json'), null);
   assert.equal(h.normalizeSellersUrl(''), 'https://pubmatic.com/sellers.json');
   for (const raw of ['__proto__, 1, DIRECT', 'https://example.com, 1, DIRECT', 'example.com, , DIRECT', 'example.com, id, INVALID', 'example.com, id, DIRECT, tag, extra']) assert.equal(h.parseAdsLine(raw).type, 'error');
+});
+
+test('domain directives separate manager scope from link and comparison hostname', () => {
+  const h = helpers();
+  const line = h.parseAdsLine('managerdomain=anzu.io,in-game # metadata');
+  assert.equal(line.type, 'variable'); assert.equal(line.value, 'anzu.io,in-game');
+  const manager = h.parseDomainDirective(line.value, line.name);
+  assert.equal(manager.domain, 'anzu.io'); assert.equal(manager.href, 'https://anzu.io/'); assert.equal(manager.scope, 'in-game');
+  const country = h.parseDomainDirective(' WWW.Example.com , FR ', 'MANAGERDOMAIN');
+  assert.equal(country.href, 'https://www.example.com/'); assert.equal(country.scope, 'FR');
+  assert.equal(h.cleanDomain(country.domain), 'example.com');
+  assert.equal(h.parseDomainDirective('example.com', 'OWNERDOMAIN').href, 'https://example.com/');
+  for (const value of [null, '', ',US', 'javascript:alert(1),US', 'https://user@example.com,US', 'bad domain,US']) {
+    assert.equal(h.parseDomainDirective(value, 'MANAGERDOMAIN').href, null);
+  }
+  assert.equal(h.parseDomainDirective('example.com,other.example', 'OWNERDOMAIN').href, null);
+  assert.equal(h.safeHref('https://example.com/path?a=one,two'), 'https://example.com/path?a=one,two');
+  assert.equal(h.safeHref('http://localhost:3000'), 'http://localhost:3000/');
+  assert.equal(h.safeHref('http://[::1]:3000'), 'http://[::1]:3000/');
 });
 
 test('full-body deadlines, byte limits, retries, cancellation and HTML detection', async t => {
